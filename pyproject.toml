@@ -2,7 +2,7 @@
 name = "rpg-assistant"
 version = "0.1.0"
 description = "An assistant built on top of LLMs capable of reproducing RPG stories."
-authors = ["Jeremy Arancio <jeremyarancio@notanemail.com>"]
+authors = []
 readme = "README.md"
 packages = [{include = "rpg_assistant"}]
 
