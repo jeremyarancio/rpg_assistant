@@ -86,6 +86,9 @@ def transform_to_prompt_prediction(element: Mapping) -> Mapping:
 def main():
     dataset = load_dataset(path=ConfigFireball.dataset_hf_repo, split="train")
     dataset_v1 = preparation(dataset)
+    # For dvc tracking and push to s3
+    dataset_v1.save_to_disk(ConfigFireball.save_to_disk_dir)
+    # HF Hub
     dataset_v1.push_to_hub(ConfigFireball.dataset_hf_repo + "_v1", private=True)
 
 
