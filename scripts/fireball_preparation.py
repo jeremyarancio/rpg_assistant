@@ -4,7 +4,7 @@ import re
 
 from datasets import load_dataset, Dataset
 
-from config.fireball import ConfigFireball
+from config.config import ConfigFireball
 
 
 LOGGER = logging.getLogger(__name__)
@@ -73,7 +73,11 @@ def transform_to_prompt_prediction(element: Mapping) -> Mapping:
     command_description = "\n\n".join(element["automation_results"])
     utterance_history = "\n\n".join(element["utterance_history"])
     after_utterances = "\n\n".join(element["after_utterances"])
+    # Prepare the prompt
     prompt = ConfigFireball.prompt_template.format(
+        LAST_UTTERANCE_KEY=ConfigFireball.LAST_UTTERANCE_KEY,
+        COMMAND_DESCRIPTION_KEY=ConfigFireball.COMMAND_DESCRIPTION_KEY,
+        UTTERANCE_HISTORY_KEY=ConfigFireball.UTTERANCE_HISTORY_KEY,
         before_utterances=before_utterances,
         command_description=command_description,
         utterance_history=utterance_history,
