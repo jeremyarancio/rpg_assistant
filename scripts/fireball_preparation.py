@@ -75,9 +75,6 @@ def transform_to_prompt_prediction(element: Mapping) -> Mapping:
     after_utterances = "\n\n".join(element["after_utterances"])
     # Prepare the prompt
     prompt = ConfigFireball.prompt_template.format(
-        LAST_UTTERANCE_KEY=ConfigFireball.LAST_UTTERANCE_KEY,
-        COMMAND_DESCRIPTION_KEY=ConfigFireball.COMMAND_DESCRIPTION_KEY,
-        UTTERANCE_HISTORY_KEY=ConfigFireball.UTTERANCE_HISTORY_KEY,
         before_utterances=before_utterances,
         command_description=command_description,
         utterance_history=utterance_history,
@@ -91,7 +88,7 @@ def main():
     dataset = load_dataset(path=ConfigFireball.dataset_hf_repo, split="train")
     dataset_v1 = preparation(dataset)
     # For dvc tracking and push to s3
-    dataset_v1.save_to_disk(ConfigFireball.save_to_disk_dir)
+    dataset_v1.save_to_disk(ConfigFireball.save_to_disk_dir / "fireball_postprocessed")
     # HF Hub
     dataset_v1.push_to_hub(ConfigFireball.dataset_hf_repo + "_v1", private=True)
 

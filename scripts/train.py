@@ -4,55 +4,92 @@ import argparse
 
 from datasets import load_dataset, Dataset
 from peft import PeftModel # for typing only
+import torch.cuda
 from transformers import (
     AutoTokenizer, 
-    AutoModelForCausalLM, 
+    AutoModelForCausalLM,
+    set_seed, 
     DataCollatorForLanguageModeling, 
     TrainingArguments, 
     Trainer,
-    PreTrainedModel
+    PreTrainedModel,
+    PreTrainedTokenizer
 )
 
+from config.config import ConfigTraining
 
 
 LOGGER = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
-def train(
-        pretrained_model_name: str, 
-        gradient_checkpointing: bool,
-        lora_config: Mapping,
-        trainer_config: Mapping,
-        mlm: bool,
-    ) -> None:
+def parse_args():
+    parser = argparse.ArgumentParser()
 
-    tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
-    use_cache = False if gradient_checkpointing else True,  # this is needed for gradient checkpointing
+    # add model id and dataset path argument
+    parser.add_argument("--model_id", type=str, default=ConfigTraining.pretrained_model_name, 
+                        help="Model id to use for training.")
+    parser.add_argument("--dataset_path", type=str, default=ConfigTraining.lm_dataset, help="Path to dataset.")
+    # add training hyperparameters for epochs, batch size, learning rate, and seed
+    parser.add_argument("--epochs", type=int, default=ConfigTraining.epochs, help="Number of epochs to train for.")
+    parser.add_argument("--per_device_train_batch_size", type=int, 
+                        default=ConfigTraining.per_device_batch_size, help="Batch size to use for training.")
+    parser.add_argument("--lr", type=float, default=ConfigTraining.lr, help="Learning rate to use for training.")
+    parser.add_argument("--seed", type=int, default=ConfigTraining.seed, help="Seed to use for training.")
+    parser.add_argument("--gradient_checkpointing", type=bool, default=ConfigTraining.gradient_checkpointing, 
+                        help="Path to deepspeed config file.")
+    parser.add_argument("--bf16", type=bool, 
+                        default=True if torch.cuda.get_device_capability()[0] == 8 else False, help="Whether to use bf16.")
+    parser.add_argument("--merge_weights", type=bool, default=ConfigTraining.merge_weights, 
+                        help="Whether to merge LoRA weights with base model.")
+    
+    args = parser.parse_known_args()
+    return args
+
+
+def train(args):
+
+    set_seed(args.seed)
+
+    tokenizer = AutoTokenizer.from_pretrained(args.model_id)
+    use_cache = False if args.gradient_checkpointing else True,  # this is needed for gradient checkpointing
     model = AutoModelForCausalLM.from_pretrained(
-        pretrained_model_name, 
+        args.model_id, 
         device_map="auto", 
         load_in_4bit=True,
         trust_remote_code=True,
         use_cache=use_cache
     )
-    LOGGER.info(f"Pretrained model and tokenizer imported from {pretrained_model_name}")
-    tokenizer.pad_token = tokenizer.eos_token
-    model = prepare_model(model)
-    model = create_peft_model(model, lora_config)
-    dataset = load_dataset
-    dataset = load_dataset(hf_repo, split)
-    LOGGER.info(f"Train dataset downloaded:\n {dataset['train']}")
-    LOGGER.info(f"Number of tokens for the training: {dataset['train'].num_rows*len(dataset['train']['input_ids'][0])}")
+    LOGGER.info(f"Pretrained model and tokenizer imported from {args.model_id}")
+    model = prepare_model(model, gradient_checkpointing=args.gradient_checkpointing)
+    model = create_peft_model(model)
+    
+    dataset = load_dataset(args.lm_dataset, split="train")
+    LOGGER.info(f"Number of tokens for the training: {dataset.num_rows*len(dataset['input_ids'][0])}")
+    
+    training_args = TrainingArguments(
+        output_dir=ConfigTraining.output_dir / "tmp",
+        overwrite_output_dir=True,
+        per_device_train_batch_size=args.per_device_train_batch_size,
+        bf16=args.bf16,  # Use BF16 if available
+        learning_rate=args.lr,
+        num_train_epochs=args.epochs,
+        gradient_checkpointing=args.gradient_checkpointing,
+        # logging strategies
+        logging_dir=f"{ConfigTraining.output_dir}/logs",
+        logging_strategy="steps",
+        logging_steps=10,
+        save_strategy="no",
+    )
     trainer = Trainer(
         model=model,
         train_dataset=dataset['train'],
-        args=TrainingArguments(**trainer_config),
-        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=mlm)
+        args=training_args,
+        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
     )
+    
     trainer.train()
-    model.push_to_hub(repo_id=hf_repo)
-    tokenizer.push_to_hub(repo_id=hf_repo)
-
+    save_model(args.merge_weights, trainer, tokenizer)
 
 def prepare_model(model: PreTrainedModel, gradient_checkpointing: bool) -> PreTrainedModel:
     from torch import float16, bfloat16, float32
@@ -70,19 +107,54 @@ def prepare_model(model: PreTrainedModel, gradient_checkpointing: bool) -> PreTr
     return model
 
 
-def create_peft_model(model: PreTrainedModel, lora_config: Mapping) -> PeftModel:
+def create_peft_model(model) -> PeftModel:
+
     from peft import get_peft_model, LoraConfig, TaskType
 
-    peft_config = LoraConfig(**lora_config)
-        # task_type=TaskType.CAUSAL_LM,
-        # inference_mode=False,
-        # r=8,
-        # lora_alpha=32,
-        # lora_dropout=0.05,
-        # target_modules=["query_key_value"]
-
+    lora_config = LoraConfig(
+        task_type=ConfigTraining.task_type,
+        inference_mode=ConfigTraining.inference_mode,
+        r=ConfigTraining.r,
+        lora_alpha=ConfigTraining.lora_alpha,
+        lora_dropout=ConfigTraining.lora_dropout,
+        target_modules=ConfigTraining.target_modules
+    )
     # prepare int-8 model for training
-    model = get_peft_model(model, peft_config)
+    model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
     return model
+
+
+def save_model(merge_weights: bool, trainer: Trainer, tokenizer: PreTrainedTokenizer) -> None:
+    """Save model with our without merging Adapters from Lora"""
+
+    if merge_weights:
+        # merge adapter weights with base model and save
+        # save int 4 model
+        trainer.model.save_pretrained(ConfigTraining.output_dir / "tmp", safe_serialization=False)
+        # clear memory
+        del model
+        del trainer
+        torch.cuda.empty_cache()
+
+        from peft import AutoPeftModelForCausalLM
+
+        # load PEFT model in fp16
+        model = AutoPeftModelForCausalLM.from_pretrained(
+            ConfigTraining.output_dir / "tmp",
+            torch_dtype=torch.float16,
+            low_cpu_mem_usage=True,
+            trust_remote_code=True  # ATTENTION: This allows remote code execution
+        )  
+        # Merge LoRA and base model and save
+        merged_model = model.merge_and_unload()
+        # merged_model.save_pretrained(ConfigTraining.output_dir, safe_serialization=True) #TODO: uncomment when working with Sagemaker
+        merged_model.push_to_hub(repo_id=ConfigTraining.model_name)
+    else:
+        # trainer.model.save_pretrained(ConfigTraining.output_dir, safe_serialization=True) #TODO: uncomment when working with Sagemaker
+        trainer.push_to_hub(repo_id=ConfigTraining.model_name)
+
+    tokenizer.push_to_hub(repo_id=ConfigTraining.model_name)
+
+
 
