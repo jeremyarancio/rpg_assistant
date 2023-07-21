@@ -20,7 +20,7 @@ def prepare_dataset(dataset_path: str, pretrained_model_name: str) -> None:
    max_length = len(max(dataset["input_ids"], key=len))
    LOGGER.info(f"Maximal length in the dataset: {max_length}") # Max_length = 2788
    # We save the tokenizer with the new tokens
-   dataset.save_to_disk(ConfigFireball.save_to_disk_dir / "fireball_tokenized")
+   dataset.push_to_hub("JeremyArancio/fireball_tokenized", private=True)
 
 
 def group_prompt_prediction(element: Mapping) -> Mapping:

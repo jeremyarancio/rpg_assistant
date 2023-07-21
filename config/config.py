@@ -23,21 +23,23 @@ class ConfigFireball():
 
 
 class ConfigTraining():
-    pretrained_model_name = "mosaicml/mpt-7b"
-    lm_dataset = "JeremyArancio/fireball_tokenized"
+    pretrained_model_name = "tiiuae/falcon-7b"
+    dataset_path = "JeremyArancio/fireball_tokenized"
     model_name = "JeremyArancio/mpt-7b-QLora-4bits-rpg-assistant-v1"
     output_dir = REPO_DIR / "models"
-    max_length = 3400 # Max length in Fireball: ~2800
-    epochs = 3
-    per_device_batch_size = 1
+    max_length = 3000 # Max length in Fireball: ~2800
+    epochs = 0.1
+    per_device_batch_size = 4
     lr = 5e-5
     seed = 42
     merge_weights = True
+    gradient_checkpointing = True
+    gradient_accumulation_steps = 4
 
     #peft - lora
-    task_type = TaskType.CAUSAL_LM,
-    inference_mode = False,
-    r = 8,
-    lora_alpha = 32,
-    lora_dropout = 0.05,
-    target_modules = ["query_key_value"]
+    task_type = TaskType.CAUSAL_LM
+    inference_mode = False
+    r = 64
+    lora_alpha = 16
+    lora_dropout = 0.05
+  

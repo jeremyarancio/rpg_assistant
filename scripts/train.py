@@ -29,7 +29,7 @@ def parse_args():
     # add model id and dataset path argument
     parser.add_argument("--model_id", type=str, default=ConfigTraining.pretrained_model_name, 
                         help="Model id to use for training.")
-    parser.add_argument("--dataset_path", type=str, default=ConfigTraining.lm_dataset, help="Path to dataset.")
+    parser.add_argument("--dataset_path", type=str, default=ConfigTraining.dataset_path, help="Path to dataset.")
     # add training hyperparameters for epochs, batch size, learning rate, and seed
     parser.add_argument("--epochs", type=int, default=ConfigTraining.epochs, help="Number of epochs to train for.")
     parser.add_argument("--per_device_train_batch_size", type=int, 
@@ -37,7 +37,9 @@ def parse_args():
     parser.add_argument("--lr", type=float, default=ConfigTraining.lr, help="Learning rate to use for training.")
     parser.add_argument("--seed", type=int, default=ConfigTraining.seed, help="Seed to use for training.")
     parser.add_argument("--gradient_checkpointing", type=bool, default=ConfigTraining.gradient_checkpointing, 
-                        help="Path to deepspeed config file.")
+                        help="Gradient checkpointing")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=ConfigTraining.gradient_accumulation_steps, 
+                        help="Number of gradient accumulation steps to save memory.")
     parser.add_argument("--bf16", type=bool, 
                         default=True if torch.cuda.get_device_capability()[0] == 8 else False, help="Whether to use bf16.")
     parser.add_argument("--merge_weights", type=bool, default=ConfigTraining.merge_weights, 
@@ -52,6 +54,7 @@ def train(args):
     set_seed(args.seed)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_id)
+    tokenizer.pad_token = tokenizer.eos_token
     use_cache = False if args.gradient_checkpointing else True,  # this is needed for gradient checkpointing
     model = AutoModelForCausalLM.from_pretrained(
         args.model_id, 
@@ -64,7 +67,7 @@ def train(args):
     model = prepare_model(model, gradient_checkpointing=args.gradient_checkpointing)
     model = create_peft_model(model)
     
-    dataset = load_dataset(args.lm_dataset, split="train")
+    dataset = load_dataset(args.dataset_path, split="train")
     LOGGER.info(f"Number of tokens for the training: {dataset.num_rows*len(dataset['input_ids'][0])}")
     
     training_args = TrainingArguments(
@@ -83,7 +86,7 @@ def train(args):
     )
     trainer = Trainer(
         model=model,
-        train_dataset=dataset['train'],
+        train_dataset=dataset,
         args=training_args,
         data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
     )
@@ -117,7 +120,7 @@ def create_peft_model(model) -> PeftModel:
         r=ConfigTraining.r,
         lora_alpha=ConfigTraining.lora_alpha,
         lora_dropout=ConfigTraining.lora_dropout,
-        target_modules=ConfigTraining.target_modules
+        target_modules=["query_key_value"]
     )
     # prepare int-8 model for training
     model = get_peft_model(model, lora_config)
@@ -159,8 +162,5 @@ def save_model(merge_weights: bool, trainer: Trainer, tokenizer: PreTrainedToken
 
 if __name__ == "__main__":
 
-    args = parse_args()
+    args, _ = parse_args()
     train(args)
-
-
-
