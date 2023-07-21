@@ -157,4 +157,10 @@ def save_model(merge_weights: bool, trainer: Trainer, tokenizer: PreTrainedToken
     tokenizer.push_to_hub(repo_id=ConfigTraining.model_name)
 
 
+if __name__ == "__main__":
+
+    args = parse_args()
+    train(args)
+
+
 
