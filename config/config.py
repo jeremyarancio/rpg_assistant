@@ -27,8 +27,8 @@ class ConfigTraining():
     dataset_path = "JeremyArancio/fireball_tokenized"
     model_name = "JeremyArancio/mpt-7b-QLora-4bits-rpg-assistant-v1"
     output_dir = REPO_DIR / "models"
-    max_length = 3000 # Max length in Fireball: ~2800
-    epochs = 0.1
+    max_length = 1000 # Max length in Fireball: ~2800
+    epochs = 1
     per_device_batch_size = 4
     lr = 5e-5
     seed = 42
