@@ -17,7 +17,8 @@ def prepare_dataset(pretrained_model_name: str) -> None:
    dataset = dataset.map(group_prompt_prediction, remove_columns=["prompt", "prediction"])
    tokenizer = load_tokenizer(pretrained_model_name)
    dataset = dataset.map(tokenize, remove_columns="text", fn_kwargs={"tokenizer": tokenizer})
-   dataset = dataset.filter(lambda x: x["length"][0] <= ConfigTraining.max_length) # See notebooks/fireball_dataset/3_training_optimization.ipynb
+   # We remove truncated sequences (See notebooks/fireball_dataset/3_training_optimization.ipynb)
+   dataset = dataset.filter(lambda x: x["input_ids"][-1] == tokenizer.pad_token_id) 
    dataset.push_to_hub("JeremyArancio/fireball_tokenized", private=True)
 
 
@@ -38,7 +39,8 @@ def tokenize(element: Mapping, tokenizer: PreTrainedTokenizer) -> Mapping:
       element["text"], 
       truncation=True, 
       return_length=True, 
-      max_length=ConfigTraining.max_length
+      max_length=ConfigTraining.max_length,
+      padding="max_length"
    )
    return inputs
 

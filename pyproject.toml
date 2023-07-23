@@ -9,11 +9,12 @@ packages = [{include = "rpg_assistant"}]
 [tool.poetry.dependencies]
 python = "^3.9"
 datasets = "^2.13.1"
-transformers = {extras = ["torch"], version = "^4.31.0"}
+transformers = {version = "4.30.0", extras = ["torch"]}
 dvc = {extras = ["s3"], version = "^3.5.1"}
 peft = ">=0.4.0"
 bitsandbytes = "^0.40.2"
 accelerate = "^0.21.0"
+torch = ">=2.0.0, !=2.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
