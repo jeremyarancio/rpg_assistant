@@ -31,16 +31,16 @@ def group_prompt_prediction(element: Mapping) -> Mapping:
 def load_tokenizer(pretrained_model_name: str):
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
     tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "right" # Bloom is left padded / Falcon right padded
     return tokenizer
 
 
 def tokenize(element: Mapping, tokenizer: PreTrainedTokenizer) -> Mapping:
    inputs = tokenizer(
       element["text"], 
-      truncation=True, 
-      return_length=True, 
+      truncation=True,
       max_length=ConfigTraining.max_length,
-      padding="max_length"
+      padding="max_length",
    )
    return inputs
 
