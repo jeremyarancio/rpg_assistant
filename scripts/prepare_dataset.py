@@ -12,14 +12,17 @@ logging.basicConfig(level=logging.INFO)
 
 
 def prepare_dataset(pretrained_model_name: str) -> None:
-   dataset = load_from_disk(ConfigFireball.save_to_disk_dir / "fireball_postprocessed")
+   dataset = load_from_disk(ConfigFireball.data_dir / "fireball_postprocessed")
    dataset.cleanup_cache_files()
    dataset = dataset.map(group_prompt_prediction, remove_columns=["prompt", "prediction"])
    tokenizer = load_tokenizer(pretrained_model_name)
    dataset = dataset.map(tokenize, remove_columns="text", fn_kwargs={"tokenizer": tokenizer})
    # We remove truncated sequences (See notebooks/fireball_dataset/3_training_optimization.ipynb)
    dataset = dataset.filter(lambda x: x["input_ids"][-1] == tokenizer.pad_token_id) 
-   dataset.push_to_hub("JeremyArancio/fireball_tokenized", private=True)
+   dataset.save_to_disk(ConfigFireball.s3_bucket_uri + "/fireball_tokenized")
+   # We also save the dataset in the repo for dvc tracking
+   dataset.save_to_disk(ConfigFireball.data_dir / "fireball_tokenized")
+   tokenizer.push_to_hub(ConfigTraining.model_name)
 
 
 def group_prompt_prediction(element: Mapping) -> Mapping:
@@ -47,6 +50,4 @@ def tokenize(element: Mapping, tokenizer: PreTrainedTokenizer) -> Mapping:
 
 if __name__ == "__main__":
 
-   prepare_dataset(
-      pretrained_model_name=ConfigTraining.pretrained_model_name
-   )
+   prepare_dataset(pretrained_model_name=ConfigTraining.pretrained_model_name)
