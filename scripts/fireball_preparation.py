@@ -4,7 +4,7 @@ import re
 
 from datasets import load_dataset, Dataset
 
-from config.config import ConfigFireball
+from config import ConfigFireball
 
 
 LOGGER = logging.getLogger(__name__)

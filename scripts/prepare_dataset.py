@@ -4,7 +4,7 @@ import logging
 from datasets import load_from_disk
 from transformers import AutoTokenizer, PreTrainedTokenizer
 
-from config.config import ConfigFireball, ConfigTraining
+from config import ConfigFireball, ConfigTraining
 
 
 LOGGER = logging.getLogger(__name__)
@@ -19,8 +19,6 @@ def prepare_dataset(pretrained_model_name: str) -> None:
    dataset = dataset.map(tokenize, remove_columns="text", fn_kwargs={"tokenizer": tokenizer})
    # We remove truncated sequences (See notebooks/fireball_dataset/3_training_optimization.ipynb)
    dataset = dataset.filter(lambda x: x["input_ids"][-1] == tokenizer.pad_token_id) 
-   dataset.save_to_disk(ConfigFireball.s3_bucket_uri + "/fireball_tokenized")
-   # We also save the dataset in the repo for dvc tracking
    dataset.save_to_disk(ConfigFireball.data_dir / "fireball_tokenized")
    tokenizer.push_to_hub(ConfigTraining.model_name)
 

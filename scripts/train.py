@@ -1,8 +1,7 @@
 import logging
-from typing import Mapping
 import argparse
 
-from datasets import load_dataset, Dataset
+from datasets import load_from_disk
 from peft import PeftModel # for typing only
 import torch.cuda
 from transformers import (
@@ -15,37 +14,29 @@ from transformers import (
     PreTrainedModel
 )
 
-from config.config import ConfigTraining, ConfigFireball
+from config import ConfigTraining
 
 
 LOGGER = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    # pretrained model to fine-tune with qlora
-    parser.add_argument("--petrained_model_name", type=str, default=ConfigTraining.pretrained_model_name)
-    # add model id and dataset path argument
-    parser.add_argument("--model_name", type=str, default=ConfigTraining.model_name,
-                        help="Model id to use for training.")
-    parser.add_argument("--dataset_path", type=str, default=ConfigFireball.s3_bucket_uri / "fireball_tokenized", 
-                        help="Path to dataset in s3.")
-    # add training hyperparameters for epochs, batch size, learning rate, and seed
+    # Need to be arg
+    parser.add_argument("--dataset_dir", type=str, help="Path to the training dataset.")
+
+    parser.add_argument("--output_dir", type=str, default=ConfigTraining.output_dir)
+    parser.add_argument("--pretrained_model_name", type=str, default=ConfigTraining.pretrained_model_name)
+    parser.add_argument("--model_name", type=str, default=ConfigTraining.model_name, help="Pretrained model from the hub to use for training.")
     parser.add_argument("--epochs", type=int, default=ConfigTraining.epochs, help="Number of epochs to train for.")
-    parser.add_argument("--per_device_train_batch_size", type=int,
-                        default=ConfigTraining.per_device_batch_size, help="Batch size to use for training.")
+    parser.add_argument("--per_device_train_batch_size", type=int, default=ConfigTraining.per_device_batch_size, help="Batch size to use for training.")
     parser.add_argument("--lr", type=float, default=ConfigTraining.lr, help="Learning rate to use for training.")
     parser.add_argument("--seed", type=int, default=ConfigTraining.seed, help="Seed to use for training.")
-    parser.add_argument("--gradient_checkpointing", type=bool, default=ConfigTraining.gradient_checkpointing,
-                        help="Gradient checkpointing")
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=ConfigTraining.gradient_accumulation_steps,
-                        help="Number of gradient accumulation steps to save memory.")
-    parser.add_argument("--bf16", type=bool,
-                        default=True if torch.cuda.get_device_capability()[0] == 8 else False, help="Whether to use bf16.")
-    parser.add_argument("--merge_weights", type=bool, default=ConfigTraining.merge_weights,
-                        help="Whether to merge LoRA weights with base model.")
+    parser.add_argument("--gradient_checkpointing", type=bool, default=ConfigTraining.gradient_checkpointing, help="Gradient checkpointing")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=ConfigTraining.gradient_accumulation_steps, help="Number of gradient accumulation steps to save memory.")
+    parser.add_argument("--bf16", type=bool, default=True if torch.cuda.get_device_capability()[0] == 8 else False, help="Whether to use bf16.")
+    parser.add_argument("--merge_weights", type=bool, default=ConfigTraining.merge_weights, help="Whether to merge LoRA weights with base model.")
 
     args = parser.parse_known_args()
     return args
@@ -59,21 +50,28 @@ def train(args):
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     use_cache = False if args.gradient_checkpointing else True,  # this is needed for gradient checkpointing
     model = AutoModelForCausalLM.from_pretrained(
-        args.petrained_model_name,
+        args.pretrained_model_name,
         device_map="auto",
         load_in_4bit=True,
         trust_remote_code=True,
         use_cache=use_cache
     )
     LOGGER.info(f"Pretrained model imported from {args.pretrained_model_name} and tokenizer imported from {args.model_id}")
+    LOGGER.info(f'Prepare model: freeze pretrained model - \
+                    gradient_checkpointng = {args.gradient_checkpointing} - \
+                    cast layer norms and head to Float32'
+    )
     model = prepare_model(model, gradient_checkpointing=args.gradient_checkpointing)
+    LOGGER.info(f"Create LoRA model.")
     model = create_peft_model(model)
 
-    dataset = load_dataset(args.dataset_path, split="train")
+    LOGGER.info(f"Load dataset from {args.dataset_dir}.")
+    dataset = load_from_disk(args.dataset_dir)
     LOGGER.info(f"Number of tokens for the training: {dataset.num_rows*len(dataset['input_ids'][0])}")
 
+    LOGGER.info("Start training.")
     training_args = TrainingArguments(
-        output_dir=ConfigTraining.output_dir,
+        output_dir=args.output_dir,
         overwrite_output_dir=True,
         per_device_train_batch_size=args.per_device_train_batch_size,
         bf16=args.bf16,  # Use BF16 if available
@@ -81,7 +79,7 @@ def train(args):
         num_train_epochs=args.epochs,
         gradient_checkpointing=args.gradient_checkpointing,
         # logging strategies
-        logging_dir=f"{ConfigTraining.output_dir}/logs",
+        logging_dir=f"{args.output_dir}/logs",
         logging_strategy="steps",
         logging_steps=10,
         save_strategy="no",
@@ -93,8 +91,8 @@ def train(args):
         data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
     )
     trainer.train()
-    
-    # Saving
+    LOGGER.info(f"Training done. Start saving with merge_weights = {args.merge_weights}.")
+
     if args.merge_weights:
         # merge adapter weights with base model and save
         # save int 4 model
@@ -115,11 +113,9 @@ def train(args):
         )  
         # Merge LoRA and base model and save
         merged_model = model.merge_and_unload()
-        # merged_model.save_pretrained(ConfigTraining.output_dir, safe_serialization=True) #TODO: uncomment when working with Sagemaker
-        merged_model.save_pretrained(ConfigTraining.model_save_dir, safe_serialization=True)
+        merged_model.save_pretrained(ConfigTraining.output_dir, safe_serialization=True)
     else:
-        # trainer.model.save_pretrained(ConfigTraining.output_dir, safe_serialization=True) #TODO: uncomment when working with Sagemaker
-        trainer.save_pretrained(ConfigTraining.model_save_dir, safe_serialization=True)
+        trainer.model.save_pretrained(ConfigTraining.output_dir, safe_serialization=True)
 
 
 def prepare_model(model: PreTrainedModel, gradient_checkpointing: bool) -> PreTrainedModel:

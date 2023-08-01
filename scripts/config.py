@@ -3,26 +3,17 @@ import logging
 from pathlib import Path
 
 from peft import TaskType
-import sagemaker
 
 
 REPO_DIR = Path(os.path.dirname(os.path.realpath(__file__))).parent
 LOGGER = logging.getLogger(__name__)
 
 
-# Init Sagemaker
-sess = sagemaker.Session()
-sagemaker_session_bucket = sess.default_bucket()
-sess = sagemaker.Session(default_bucket=sagemaker_session_bucket)
-LOGGER.info(f"sagemaker bucket: {sess.default_bucket()}")
-LOGGER.info(f"sagemaker session region: {sess.boto_region_name}")
-
-
 class ConfigFireball():
     
     fireball_dataset = "JeremyArancio/fireball"
     data_dir = REPO_DIR / "data"
-    s3_bucket_uri = f"s3://{sess.default_bucket()}/rpg-assistant/fireball_data"
+    s3_data_uri = "s3://{}/rpg-assistant/fireball_data/fireball_tokenized"
     PREDICTION_KEY = "\n### Prediction:\n"
 
     prompt_template =  (
