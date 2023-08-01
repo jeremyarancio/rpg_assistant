@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument("--output_dir", type=str, default=ConfigTraining.output_dir)
     parser.add_argument("--pretrained_model_name", type=str, default=ConfigTraining.pretrained_model_name)
     parser.add_argument("--model_name", type=str, default=ConfigTraining.model_name, help="Pretrained model from the hub to use for training.")
-    parser.add_argument("--epochs", type=int, default=ConfigTraining.epochs, help="Number of epochs to train for.")
+    parser.add_argument("--epochs", type=float, default=ConfigTraining.epochs, help="Number of epochs to train for.")
     parser.add_argument("--per_device_train_batch_size", type=int, default=ConfigTraining.per_device_batch_size, help="Batch size to use for training.")
     parser.add_argument("--lr", type=float, default=ConfigTraining.lr, help="Learning rate to use for training.")
     parser.add_argument("--seed", type=int, default=ConfigTraining.seed, help="Seed to use for training.")
@@ -56,7 +56,7 @@ def train(args):
         trust_remote_code=True,
         use_cache=use_cache
     )
-    LOGGER.info(f"Pretrained model imported from {args.pretrained_model_name} and tokenizer imported from {args.model_id}")
+    LOGGER.info(f"Pretrained model imported from {args.pretrained_model_name} and tokenizer imported from {args.model_name}")
     LOGGER.info(f'Prepare model: freeze pretrained model - \
                     gradient_checkpointng = {args.gradient_checkpointing} - \
                     cast layer norms and head to Float32'

@@ -8,10 +8,12 @@ from sagemaker.huggingface import HuggingFace
 
 from config import ConfigFireball
 
-def sagemaker_training(role, sess) -> Tuple[str, sagemaker.Session]:
+def sagemaker_training(role: str, sess: sagemaker.Session) -> None:
 
     # Relative source dir based on the localtion of this script
     source_dir = os.path.dirname(os.path.realpath(__file__))
+    # Where artifacts are stored
+    output_path = f's3://{sess.default_bucket()}/rpg-assistant/models-registry/'
 
     # define Training Job Name
     job_name = f'bloom3B-qlora-fireball-{time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())}'
@@ -26,6 +28,7 @@ def sagemaker_training(role, sess) -> Tuple[str, sagemaker.Session]:
     huggingface_estimator = HuggingFace(
         entry_point           = 'train.py',        # train script
         source_dir            = source_dir,        # directory which includes all the files needed for training
+        output_path           = output_path,       # s3 path to save the artifacts
         instance_type         = 'ml.g4dn.xlarge',  # instances type used for the training job
         instance_count        = 1,                 # the number of instances used for training
         base_job_name         = job_name,          # the name of the training job
@@ -45,14 +48,9 @@ def sagemaker_training(role, sess) -> Tuple[str, sagemaker.Session]:
     huggingface_estimator.fit(data, wait=True)
 
 
-def init_sagemaker_session():
+def init_sagemaker_session() -> Tuple[str, sagemaker.Session]:
     sess = sagemaker.Session()
-    # sagemaker session bucket -> used for uploading data, models and logs
-    # sagemaker will automatically create this bucket if it not exists
-    sagemaker_session_bucket=None
-    if sagemaker_session_bucket is None and sess is not None:
-        # set to default bucket if a bucket name is not given
-        sagemaker_session_bucket = sess.default_bucket()
+    sagemaker_session_bucket = sess.default_bucket()
     role = os.getenv("SAGEMAKER_ROLE") # Need to manually add the role because of Sagemaker "bug" (https://github.com/aws/sagemaker-python-sdk/issues/300)
     sess = sagemaker.Session(default_bucket=sagemaker_session_bucket)
 
