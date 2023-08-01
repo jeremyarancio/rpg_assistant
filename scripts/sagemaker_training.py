@@ -8,6 +8,10 @@ from sagemaker.huggingface import HuggingFace
 
 from config import ConfigFireball
 
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
+
+
 def sagemaker_training(role: str, sess: sagemaker.Session) -> None:
 
     # Relative source dir based on the localtion of this script
@@ -21,7 +25,9 @@ def sagemaker_training(role: str, sess: sagemaker.Session) -> None:
     hyperparameters = {
         "output_dir": '/opt/ml/model',
         "epochs": 0.001,
-        "dataset_dir": "/opt/ml/input/data",
+        # Need to ref the correct Channel (https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo-running-container.html)
+        # https://github.com/aws/sagemaker-training-toolkit/blob/master/ENVIRONMENT_VARIABLES.md
+        "dataset_dir": "/opt/ml/input/data/training",
     }
 
     # create the Estimator
@@ -42,6 +48,7 @@ def sagemaker_training(role: str, sess: sagemaker.Session) -> None:
     )
 
     # define a data input dictonary with our uploaded s3 uris
+    # SM_CHANNEL_{channel_name}
     data = {'training': ConfigFireball.s3_data_uri.format(sess.default_bucket())}
 
     # starting the train job with our uploaded datasets as input

@@ -1,3 +1,4 @@
+import os
 import logging
 import argparse
 
@@ -18,6 +19,13 @@ from config import ConfigTraining
 
 
 LOGGER = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,  # set your logging level
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    datefmt='%a, %d %b %Y %H:%M:%S',
+    filename=os.environ["SM_MODEL_DIR"] + '/log_filename.log',
+    filemode='w'
+)
 
 
 def parse_args():
