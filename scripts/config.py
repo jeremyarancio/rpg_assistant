@@ -27,25 +27,27 @@ class ConfigFireball():
 
 
 class ConfigTraining():
+    job_name = "bloom3B-qlora-fireball"
+
     pretrained_model_name = "bigscience/bloom-3b"
-    dataset_path = "JeremyArancio/fireball_tokenized"
-    model_name = "JeremyArancio/rpg-assistant-v1"
-    output_dir = "./tmp/model"
-    model_save_dir = "/opt/ml/model/"
-    max_length = 500
+    dataset_path = "JeremyArancio/fireball_tokenized" #TODO: remove
+    model_name = "JeremyArancio/rpg-assistant-v1" #TODO: remove
+    output_dir = "./tmp/model" #TODO: remove
+    model_save_dir = "/opt/ml/model/" #TODO: remove
+    max_length = 500 #TODO: move to ConfigFireball
     epochs = 1
     per_device_batch_size = 4
     lr = 5e-5
     seed = 42
-    merge_weights = False
+    merge_weights = True
     gradient_checkpointing = True
     gradient_accumulation_steps = 4
 
     #peft - lora
     task_type = TaskType.CAUSAL_LM
     inference_mode = False
-    r = 64
+    r = 32
     lora_alpha = 16
     lora_dropout = 0.05
-    target_modules=["query_key_value"]
+
   
