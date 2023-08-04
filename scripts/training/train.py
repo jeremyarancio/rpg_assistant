@@ -1,7 +1,6 @@
 import os
 import logging
 import argparse
-from typing import List
 
 from datasets import load_from_disk
 from peft import PeftModel # for typing only
@@ -22,7 +21,7 @@ logging.basicConfig(
     level=logging.INFO,  # set your logging level
     format='%(asctime)s %(levelname)-8s %(message)s',
     datefmt='%a, %d %b %Y %H:%M:%S',
-    filename=os.environ["SM_MODEL_DIR"] + '/log_filename.log',
+    filename=os.environ["SM_MODEL_DIR"] + '/custom.log',
     filemode='w'
 )
 
@@ -48,7 +47,6 @@ def parse_args():
     parser.add_argument('--r', type=int, default=32, help='Number of attention heads for LoRA.')
     parser.add_argument('--lora_alpha', type=int, default=16, help='LoRA alpha parameter.')
     parser.add_argument('--lora_dropout', type=float, default=0.05, help='LoRA dropout parameter.')
-    parser.add_argument('--target_modules', nargs='+', type=str, default=["query_key_value", "dense", "dense_h_to_4h", "dense_4h_to_h"], help='LoRA target modules.')
     
     args = parser.parse_known_args()
     return args
@@ -59,7 +57,8 @@ def train(args):
     set_seed(args.seed)
 
     # The tokenizer was prepared during the dataset preparation
-    tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model_name)
+    # Load 
+    tokenizer = load_tokenizer(args.pretrained_model_name)
     use_cache = False if args.gradient_checkpointing else True,  # this is needed for gradient checkpointing
     model = AutoModelForCausalLM.from_pretrained(
         args.pretrained_model_name,
@@ -128,7 +127,7 @@ def train(args):
         merged_model.save_pretrained(args.output_dir, safe_serialization=True)
     else:
         trainer.model.save_pretrained(args.output_dir, safe_serialization=True)
-
+    tokenizer.save_pretrained(args.output_dir)
 
 def prepare_model(model: PreTrainedModel, gradient_checkpointing: bool) -> PreTrainedModel:
     """Prepare model for PEFT - QLoRA"""
@@ -161,7 +160,14 @@ def create_peft_model(model: PreTrainedModel, r: int, lora_alpha: int, lora_drop
     # prepare int-8 model for training
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
-    return model   
+    return model
+
+
+def load_tokenizer(pretrained_model_name: str):
+    tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "right" # Bloom is left padded / Falcon right padded
+    return tokenizer
 
 
 if __name__ == "__main__":

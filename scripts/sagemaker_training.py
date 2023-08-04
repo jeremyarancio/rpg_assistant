@@ -13,7 +13,7 @@ def sagemaker_training(role: str, sess: sagemaker.Session) -> None:
     # Relative source dir based on the localtion of this script
     source_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "training")
     # Where artifacts are stored
-    output_path = f's3://{sess.default_bucket()}/rpg-assistant/models-registry/'
+    output_path = f's3://rpg-assistant/models-registry/'
 
     # define Training Job Name
     job_name = f'{ConfigTraining.job_name}-{time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())}'
@@ -51,7 +51,7 @@ def sagemaker_training(role: str, sess: sagemaker.Session) -> None:
     # SM_CHANNEL_{channel_name}
     # Need to ref the correct Channel (https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo-running-container.html)
     # https://github.com/aws/sagemaker-training-toolkit/blob/master/ENVIRONMENT_VARIABLES.md
-    data = {'training': ConfigFireball.s3_data_uri.format(sess.default_bucket())}
+    data = {'training': ConfigFireball.s3_data_uri}
 
     # starting the train job with our uploaded datasets as input
     huggingface_estimator.fit(data, wait=True)

@@ -13,7 +13,7 @@ class ConfigFireball():
     
     fireball_dataset = "JeremyArancio/fireball"
     data_dir = REPO_DIR / "data"
-    s3_data_uri = "s3://{}/rpg-assistant/fireball_data/fireball_tokenized"
+    s3_data_uri = "s3://rpg-assistant/fireball_data/fireball_tokenized"
     PREDICTION_KEY = "\n### Prediction:\n"
 
     prompt_template =  (
