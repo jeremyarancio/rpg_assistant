@@ -28,6 +28,7 @@ class ConfigFireball():
 
 class ConfigTraining():
     job_name = "bloom3B-qlora-fireball"
+    output_path = f's3://rpg-assistant/models-registry/' # Where artifacts are stored after training job
 
     pretrained_model_name = "bigscience/bloom-3b"
     dataset_path = "JeremyArancio/fireball_tokenized" #TODO: remove

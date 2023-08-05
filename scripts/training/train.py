@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import argparse
 
@@ -18,11 +19,9 @@ from transformers import (
 
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(
-    level=logging.INFO,  # set your logging level
-    format='%(asctime)s %(levelname)-8s %(message)s',
-    datefmt='%a, %d %b %Y %H:%M:%S',
-    filename=os.environ["SM_MODEL_DIR"] + '/custom.log',
-    filemode='w'
+        level=logging.getLevelName("INFO"),
+        handlers=[logging.StreamHandler(sys.stdout)],
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
 def parse_args():
