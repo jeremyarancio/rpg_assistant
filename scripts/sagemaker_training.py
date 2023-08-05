@@ -1,5 +1,6 @@
 import os
 
+from sagemaker import Session
 from sagemaker.huggingface import HuggingFace
 
 from scripts.config import ConfigTraining, ConfigFireball
@@ -7,6 +8,8 @@ from scripts.config import ConfigTraining, ConfigFireball
 
 def sagemaker_training() -> None:
 
+    # Where the code used by the training job is staged
+    defaut_bucket = f"s3://{Session().default_bucket()}"
     # Relative source dir based on the localtion of this script
     source_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "training")
     # Where artifacts are stored
@@ -38,6 +41,7 @@ def sagemaker_training() -> None:
         entry_point           = 'train.py',                    # train script
         source_dir            = source_dir,                    # directory which includes all the files needed for training
         output_path           = output_path,                   # s3 path to save the artifacts
+        code_location         = defaut_bucket,                 # s3 path to stage the code during the training job
         instance_type         = 'ml.g4dn.xlarge',              # instances type used for the training job
         instance_count        = 1,                             # the number of instances used for training
         base_job_name         = job_name,                      # the name of the training job

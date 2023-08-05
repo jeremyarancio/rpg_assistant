@@ -67,10 +67,7 @@ def train(args):
         use_cache=use_cache
     )
     LOGGER.info(f"Pretrained model imported from {args.pretrained_model_name} and tokenizer imported from {args.pretrained_model_name}")
-    LOGGER.info(f'Prepare model: freeze pretrained model - \
-                    gradient_checkpointng = {args.gradient_checkpointing} - \
-                    cast layer norms and head to Float32'
-    )
+    LOGGER.info(f'Prepare model: freeze pretrained model - gradient_checkpointng = {args.gradient_checkpointing} - cast layer norms and head to Float32')
     model = prepare_model(model, gradient_checkpointing=args.gradient_checkpointing)
     LOGGER.info(f"Create LoRA model.")
     model = create_peft_model(model=model, r=args.r, lora_alpha=args.lora_alpha, lora_dropout=args.lora_dropout)
