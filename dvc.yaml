@@ -5,7 +5,7 @@ stages:
     - data/fireball
     - scripts/fireball/1_fireball_preprocessing.py
     outs:
-    - data/fireball_postprocessed
+    - data/fireball_postprocessed/
   tokenize_fireball:
     cmd: python scripts/fireball/2_prepare_fireball_for_training.py
     deps:

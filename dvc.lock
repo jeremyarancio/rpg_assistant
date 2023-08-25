@@ -13,7 +13,7 @@ stages:
       md5: ec1a9c5c490a9a56f8fe1755c984c079
       size: 3532
     outs:
-    - path: data/fireball_postprocessed
+    - path: data/fireball_postprocessed/
       hash: md5
       md5: a8e1a88f57ee3d3074fe2afe46ccbe29.dir
       size: 31733332
