@@ -1,6 +1,0 @@
-outs:
-- md5: a21b185a58862d0daa21ccd4e41f1383.dir
-  size: 105046956
-  nfiles: 3
-  hash: md5
-  path: fireball_tokenized

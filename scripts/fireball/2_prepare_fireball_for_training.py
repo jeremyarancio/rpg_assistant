@@ -1,26 +1,26 @@
 from typing import Mapping
 import logging
 
-from datasets import load_from_disk
+from datasets import load_from_disk, disable_caching
 from transformers import AutoTokenizer, PreTrainedTokenizer
 
-from config import ConfigFireball, ConfigTraining
+from scripts.config import ConfigFireball, ConfigTraining
 
 
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+disable_caching()
 
 
-def prepare_dataset(pretrained_model_name: str) -> None:
-   dataset = load_from_disk(ConfigFireball.data_dir / "fireball_postprocessed")
+def prepare_dataset() -> None:
+   dataset = load_from_disk(ConfigFireball.fireball_postprocessed_path)
    dataset.cleanup_cache_files()
    dataset = dataset.map(group_prompt_prediction, remove_columns=["prompt", "prediction"])
-   tokenizer = load_tokenizer(pretrained_model_name)
+   tokenizer = load_tokenizer(ConfigTraining.pretrained_model_name)
    dataset = dataset.map(tokenize, remove_columns="text", fn_kwargs={"tokenizer": tokenizer})
    # We remove truncated sequences (See notebooks/fireball_dataset/3_training_optimization.ipynb)
    dataset = dataset.filter(lambda x: x["input_ids"][-1] == tokenizer.pad_token_id) 
-   dataset.save_to_disk(ConfigFireball.data_dir / "fireball_tokenized")
-   tokenizer.push_to_hub(ConfigTraining.model_name)
+   dataset.save_to_disk(ConfigFireball.fireball_tokenized_path)
 
 
 def group_prompt_prediction(element: Mapping) -> Mapping:
@@ -40,7 +40,7 @@ def tokenize(element: Mapping, tokenizer: PreTrainedTokenizer) -> Mapping:
    inputs = tokenizer(
       element["text"], 
       truncation=True,
-      max_length=ConfigTraining.max_length,
+      max_length=ConfigFireball.max_length,
       padding="max_length",
    )
    return inputs
@@ -48,4 +48,4 @@ def tokenize(element: Mapping, tokenizer: PreTrainedTokenizer) -> Mapping:
 
 if __name__ == "__main__":
 
-   prepare_dataset(pretrained_model_name=ConfigTraining.pretrained_model_name)
+   prepare_dataset()

@@ -2,12 +2,13 @@ import logging
 from typing import Mapping
 import re
 
-from datasets import load_dataset, Dataset
+from datasets import Dataset, load_from_disk, disable_caching
 
-from config import ConfigFireball
+from scripts.config import ConfigFireball
 
 
 LOGGER = logging.getLogger(__name__)
+disable_caching()
 
 
 def preparation(dataset: Dataset) -> Dataset:
@@ -85,12 +86,9 @@ def transform_to_prompt_prediction(element: Mapping) -> Mapping:
 
 
 def main():
-    dataset = load_dataset(path=ConfigFireball.dataset_hf_repo, split="train")
+    dataset = load_from_disk(dataset_path=ConfigFireball.fireball_path)
     dataset_v1 = preparation(dataset)
-    # For dvc tracking and push to s3
-    dataset_v1.save_to_disk(ConfigFireball.save_to_disk_dir / "fireball_postprocessed")
-    # HF Hub
-    dataset_v1.push_to_hub(ConfigFireball.dataset_hf_repo + "_v1", private=True)
+    dataset_v1.save_to_disk(dataset_path=ConfigFireball.fireball_postprocessed_path)
 
 
 if __name__ == "__main__":

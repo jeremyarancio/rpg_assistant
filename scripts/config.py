@@ -11,10 +11,12 @@ LOGGER = logging.getLogger(__name__)
 
 class ConfigFireball():
     
-    fireball_dataset = "JeremyArancio/fireball"
-    data_dir = REPO_DIR / "data"
+    fireball_path = REPO_DIR / "data/fireball"
+    fireball_postprocessed_path = REPO_DIR / "data/fireball_postprocessed"
+    fireball_tokenized_path = REPO_DIR / "data/fireball_tokenized"
     s3_data_uri = "s3://rpg-assistant/fireball_data/fireball_tokenized"
     PREDICTION_KEY = "\n### Prediction:\n"
+    max_length = 500
 
     prompt_template =  (
         "### Last utterance:\n" 
@@ -35,7 +37,6 @@ class ConfigTraining():
     model_name = "JeremyArancio/rpg-assistant-v1" #TODO: remove
     output_dir = "./tmp/model" #TODO: remove
     model_save_dir = "/opt/ml/model/" #TODO: remove
-    max_length = 500 #TODO: move to ConfigFireball
     epochs = 1
     per_device_batch_size = 4
     lr = 5e-5
