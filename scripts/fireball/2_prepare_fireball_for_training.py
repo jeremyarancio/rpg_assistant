@@ -1,7 +1,7 @@
 from typing import Mapping
 import logging
 
-from datasets import load_from_disk
+from datasets import load_from_disk, disable_caching
 from transformers import AutoTokenizer, PreTrainedTokenizer
 
 from scripts.config import ConfigFireball, ConfigTraining
@@ -9,6 +9,7 @@ from scripts.config import ConfigFireball, ConfigTraining
 
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+disable_caching()
 
 
 def prepare_dataset() -> None:

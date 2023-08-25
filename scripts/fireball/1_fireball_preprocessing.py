@@ -2,12 +2,13 @@ import logging
 from typing import Mapping
 import re
 
-from datasets import Dataset, load_from_disk
+from datasets import Dataset, load_from_disk, disable_caching
 
 from scripts.config import ConfigFireball
 
 
 LOGGER = logging.getLogger(__name__)
+disable_caching()
 
 
 def preparation(dataset: Dataset) -> Dataset:
