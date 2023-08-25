@@ -1,0 +1,38 @@
+schema: '2.0'
+stages:
+  prepare_fireball:
+    cmd: python scripts/fireball/1_fireball_preprocessing.py
+    deps:
+    - path: data/fireball
+      hash: md5
+      md5: 1de3245e96256704fa6bd01dff826b6b.dir
+      size: 138551218
+      nfiles: 5
+    - path: scripts/fireball/1_fireball_preprocessing.py
+      hash: md5
+      md5: ec1a9c5c490a9a56f8fe1755c984c079
+      size: 3532
+    outs:
+    - path: data/fireball_postprocessed
+      hash: md5
+      md5: a8e1a88f57ee3d3074fe2afe46ccbe29.dir
+      size: 31733332
+      nfiles: 3
+  tokenize_fireball:
+    cmd: python scripts/fireball/2_prepare_fireball_for_training.py
+    deps:
+    - path: data/fireball_postprocessed/
+      hash: md5
+      md5: f8bc10adc63c7210a7e997c91a830053.dir
+      size: 171028116
+      nfiles: 6
+    - path: scripts/fireball/2_prepare_fireball_for_training.py
+      hash: md5
+      md5: e49293b3e1b4bd35317ab7d9a27842e8
+      size: 1726
+    outs:
+    - path: data/fireball_tokenized
+      hash: md5
+      md5: 555832b398e0f10ef7961131b00156fa.dir
+      size: 105046956
+      nfiles: 3
