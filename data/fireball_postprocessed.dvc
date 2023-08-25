@@ -1,6 +1,6 @@
 outs:
-- md5: d49fc0000c5b5e29d0333a95f8471bd5.dir
-  size: 108624716
-  nfiles: 5
+- md5: a8e1a88f57ee3d3074fe2afe46ccbe29.dir
+  size: 31733332
+  nfiles: 3
   hash: md5
   path: fireball_postprocessed
