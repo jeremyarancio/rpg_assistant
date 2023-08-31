@@ -14,10 +14,9 @@ class ConfigFireball():
     fireball_path = REPO_DIR / "data/fireball"
     fireball_postprocessed_path = REPO_DIR / "data/fireball_postprocessed"
     fireball_tokenized_path = REPO_DIR / "data/fireball_tokenized"
-    s3_data_uri = "s3://rpg-assistant/fireball_data/fireball_tokenized"
+    s3_data_uri = f"s3://rpg-assistant/fireball_data/fireball_tokenized"
     PREDICTION_KEY = "\n### Prediction:\n"
     max_length = 500
-
     prompt_template =  (
         "### Last utterance:\n" 
         + "{before_utterances}" 
@@ -30,13 +29,10 @@ class ConfigFireball():
 
 class ConfigTraining():
     job_name = "bloom3B-qlora-fireball"
-    output_path = f's3://rpg-assistant/models-registry/' # Where artifacts are stored after training job
-
+    bucket_name = "rpg-assistant"
     pretrained_model_name = "bigscience/bloom-3b"
-    dataset_path = "JeremyArancio/fireball_tokenized" #TODO: remove
-    model_name = "JeremyArancio/rpg-assistant-v1" #TODO: remove
-    output_dir = "./tmp/model" #TODO: remove
-    model_save_dir = "/opt/ml/model/" #TODO: remove
+    instance_type = 'ml.g4dn.xlarge'
+    instance_count = 1
     epochs = 1
     per_device_batch_size = 4
     lr = 5e-5
