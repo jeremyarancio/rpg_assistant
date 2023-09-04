@@ -102,7 +102,7 @@ def train(args):
 
     if args.merge_weights:
         # merge adapter weights with base model and save
-        # save int 4 model
+        # save int 4 adapters
         trainer.model.save_pretrained(args.output_dir, safe_serialization=False)
         # clear memory
         del model
