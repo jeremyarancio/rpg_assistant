@@ -15,7 +15,7 @@ peft = ">=0.4.0"
 bitsandbytes = "^0.40.2"
 accelerate = "^0.21.0"
 torch = ">=2.0.0, !=2.0.1"
-sagemaker = "^2.173.0"
+sagemaker = "^2.182.0"
 
 
 [tool.poetry.group.dev.dependencies]

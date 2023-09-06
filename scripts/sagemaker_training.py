@@ -5,19 +5,27 @@ from sagemaker.huggingface import HuggingFace
 from scripts.config import ConfigTraining, ConfigFireball
 
 
-def sagemaker_training() -> None:
-    # Where artifacts are stored
-    estimator_output_uri = f"s3://{ConfigTraining.bucket_name}/training-jobs"
-    train_data_uri = ConfigFireball.s3_data_uri
-    # Relative source dir based on the localtion of this script
-    source_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "training")
-    entry_point = "train.py"
-    role = os.getenv('SAGEMAKER_ROLE')
-    instance_type = ConfigTraining.instance_type
-    instance_count = ConfigTraining.instance_count
+def sagemaker_training(
+    estimator_output_uri: str = f"s3://{ConfigTraining.bucket_name}/training-jobs",
+    train_data_uri: str = ConfigFireball.s3_data_uri,
+    source_dir: str = os.path.join(os.path.dirname(os.path.realpath(__file__)), ConfigTraining.source_dir_folder_name),
+    entry_point: str = ConfigTraining.entry_point,
+    role: str = os.getenv('SAGEMAKER_ROLE'),
+    instance_type: str = ConfigTraining.instance_type,
+    instance_count: int = ConfigTraining.instance_count,
+    job_name: str = ConfigTraining.job_name,
+) -> None:
+    """Training script using Sagemaker Estimator / Training Jobs
 
-    # define Training Job Name
-    job_name = ConfigTraining.job_name
+    Args:
+        estimator_output_uri (_type_, optional): Where artifacts are stored. Defaults to f"s3://{ConfigTraining.bucket_name}/training-jobs".
+        source_dir (str, optional): Relative source dir based on the localtion of this script. 
+        Defaults to os.path.join(os.path.dirname(os.path.realpath(__file__)), "training").
+        role (str, optional): _description_. Defaults to os.getenv('SAGEMAKER_ROLE').
+        instance_type (str, optional): _description_. Defaults to ConfigTraining.instance_type.
+        instance_count (int, optional): _description_. Defaults to ConfigTraining.instance_count.
+        job_name (str, optional): _description_. Defaults to ConfigTraining.job_name.
+    """
 
     hyperparameters = {
         "epochs": 0.001,
@@ -39,20 +47,20 @@ def sagemaker_training() -> None:
 
     # create the Estimator
     huggingface_estimator = HuggingFace(
-        entry_point           = entry_point,                    # train script
-        source_dir            = source_dir,                     # directory which includes all the files needed for training
-        output_path           = estimator_output_uri,           # s3 path to save the artifacts
-        code_location         = estimator_output_uri,           # s3 path to stage the code during the training job
-        instance_type         = instance_type,                  # instances type used for the training job
-        instance_count        = instance_count,                 # the number of instances used for training
-        base_job_name         = job_name,                       # the name of the training job
-        role                  = role,                           # Iam role used in training job to access AWS ressources, e.g. S3
-        transformers_version  = '4.28',                         # the transformers version used in the training job
-        pytorch_version       = '2.0',                          # the pytorch_version version used in the training job
-        py_version            = 'py310',                        # the python version used in the training job
-        hyperparameters       = hyperparameters,                # the hyperparameters used for the training job
-        metric_definitions    = metrics_defintions,             # the metrics used to track the training job
-        environment           = {"HUGGINGFACE_HUB_CACHE": "/tmp/.cache" }, # set env variable to cache models in /tmp
+        entry_point           = entry_point,                                # train script
+        source_dir            = source_dir,                                 # directory which includes all the files needed for training
+        output_path           = estimator_output_uri,                       # s3 path to save the artifacts
+        code_location         = estimator_output_uri,                       # s3 path to stage the code during the training job
+        instance_type         = instance_type,                              # instances type used for the training job
+        instance_count        = instance_count,                             # the number of instances used for training
+        base_job_name         = job_name,                                   # the name of the training job
+        role                  = role,                                       # Iam role used in training job to access AWS ressources, e.g. S3
+        transformers_version  = ConfigTraining.transformers_version,        # the transformers version used in the training job
+        pytorch_version       = ConfigTraining.pytorch_version,             # the pytorch_version version used in the training job
+        py_version            = ConfigTraining.py_version,                  # the python version used in the training job
+        hyperparameters       = hyperparameters,                            # the hyperparameters used for the training job
+        metric_definitions    = metrics_defintions,                         # the metrics used to track the training job
+        environment           = {"HUGGINGFACE_HUB_CACHE": "/tmp/.cache" },  # set env variable to cache models in /tmp
     )
 
     # define a data input dictonary with our uploaded s3 uris

@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import argparse
+import shutil
 
 from datasets import load_from_disk
 from peft import PeftModel # for typing only
@@ -24,6 +25,25 @@ logging.basicConfig(
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
+
+def copy_inference_script(path: str) -> None:
+    """Copy inference script to model directory for later deployment. `inference.py` is loaded into the instance along
+    `train.py` and `requirements.txt` during training.
+
+    Args:
+        path (str): SM_MODEL_DIR / code
+    """
+    os.makedirs(path, exist_ok=True)
+    shutil.copyfile(
+        os.path.join(os.path.dirname(__file__), "inference.py"),
+        os.path.join(path, "inference.py"),
+    )
+    shutil.copyfile(
+        os.path.join(os.path.dirname(__file__), "requirements.txt"),
+        os.path.join(path, "requirements.txt"),
+    )
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
 
@@ -40,7 +60,7 @@ def parse_args():
     parser.add_argument("--gradient_checkpointing", type=bool, default=True, help="Gradient checkpointing")
     parser.add_argument("--gradient_accumulation_steps", type=int, default=4, help="Number of gradient accumulation steps to save memory.")
     parser.add_argument("--bf16", type=bool, default=True if torch.cuda.get_device_capability()[0] == 8 else False, help="Whether to use bf16.")
-    parser.add_argument("--merge_weights", type=bool, default=True, help="Whether to merge LoRA weights with base model.")
+    parser.add_argument("--merge_weights", type=bool, default=False, help="Whether to merge LoRA weights with base model.")
     
     #Lora
     parser.add_argument('--r', type=int, default=32, help='Number of attention heads for LoRA.')
@@ -102,7 +122,7 @@ def train(args):
 
     if args.merge_weights:
         # merge adapter weights with base model and save
-        # save int 4 model
+        # save int 4 adapters
         trainer.model.save_pretrained(args.output_dir, safe_serialization=False)
         # clear memory
         del model
@@ -122,7 +142,7 @@ def train(args):
         merged_model = model.merge_and_unload()
         merged_model.save_pretrained(args.output_dir, safe_serialization=True)
     else:
-        trainer.model.save_pretrained(args.output_dir, safe_serialization=True)
+        trainer.model.save_pretrained(args.output_dir, safe_serialization=False)
     tokenizer.save_pretrained(args.output_dir)
 
 def prepare_model(model: PreTrainedModel, gradient_checkpointing: bool) -> PreTrainedModel:
@@ -170,3 +190,4 @@ if __name__ == "__main__":
 
     args, _ = parse_args()
     train(args)
+    copy_inference_script(os.path.join(args.output_dir, "code"))
