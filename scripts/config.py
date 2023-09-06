@@ -7,7 +7,6 @@ from peft import TaskType
 
 REPO_DIR = Path(os.path.dirname(os.path.realpath(__file__))).parent
 PROJECT_NAME = "rpg-assistant"
-LOGGER = logging.getLogger(__name__)
 
 
 class ConfigFireball:
@@ -38,7 +37,7 @@ class ConfigTraining:
     per_device_batch_size = 4
     lr = 5e-5
     seed = 42
-    merge_weights = True
+    merge_weights = False
     gradient_checkpointing = True
     gradient_accumulation_steps = 4
 
@@ -53,6 +52,8 @@ class ConfigTraining:
     transfomrers_version = "4.28"
     pytorch_version = "2.0"
     py_version = "py310"
+    source_dir_folder_name = "sagemaker_scripts/"
+    entry_point = "train.py"
 
 
 class ConfigModelRegistry:
@@ -64,7 +65,7 @@ class ConfigModelRegistry:
 class ConfigDeployment:
     instance_type = 'ml.g4dn.xlarge'
     instance_count = 1
-    endpoint_name = "test_inference_endpoint"
+    endpoint_name = "test-inference-endpoint"
     test_data = {
         "inputs": """### Last utterance:
 Razored teeth lash out to take advantage of an opening
@@ -80,7 +81,10 @@ Said only movement of Lis' turn, will assume applies)
 
 moving forward, only allowing range for herself, her halberd swings out with practiced, deadly precision.
 
-Razored teeth lash out to take advantage of an opening"""     
+Razored teeth lash out to take advantage of an opening
+
+### Prediction:
+"""
     }
 
   

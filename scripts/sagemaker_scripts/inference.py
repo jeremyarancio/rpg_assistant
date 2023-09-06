@@ -2,6 +2,7 @@ import logging
 import sys
 
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from peft import PeftModel, PeftConfig
 
 
 LOGGER = logging.getLogger(__name__)
@@ -20,8 +21,16 @@ def model_fn(model_dir):
         model_dir: artifact containing the trained model
     """
     LOGGER.info("Start download model.")
-    tokenizer = AutoTokenizer.from_pretrained(model_dir)
-    model = AutoModelForCausalLM.from_pretrained(model_dir)
+    try: 
+        tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        # Import the model
+        config = PeftConfig.from_pretrained(model_dir)
+        model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path,
+                                                     load_in_4bit=True, device_map='auto')
+        # Load the Lora model
+        model = PeftModel.from_pretrained(model, model_dir)
+    except Exception as e:
+        LOGGER.error(f"Error: {e}")
     LOGGER.info("Model downloaded successfully")
     return model, tokenizer
 

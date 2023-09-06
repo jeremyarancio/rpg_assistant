@@ -20,3 +20,8 @@ The custom module can override the following methods:
 * `output_fn(prediction, accept)` overrides the default method for post-processing. The return value result will be the response to your request (e.g.JSON). The inputs are:
     * predictions is the result from `predict_fn`. 
     * `accept` is the return accept type from the HTTP Request, e.g. application/json.
+
+### Important note:
+If the `inference.py` script is not in the original model.tar.gz, this file is unpacked then repacked to add the `inference.py` script ([AWS FAQ](https://docs.aws.amazon.com/sagemaker/latest/dg/mlopsfaq.html)). This can lead to long deployment times. 
+
+To avoid this , we can implement directly the inference.py script into the model.tar.gz file during the training phase (see philipschimdt [blog](https://www.philschmid.de/bloom-sagemaker-peft#4-deploy-the-model-to-amazon-sagemaker-endpoint)).

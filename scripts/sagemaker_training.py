@@ -8,8 +8,8 @@ from scripts.config import ConfigTraining, ConfigFireball
 def sagemaker_training(
     estimator_output_uri: str = f"s3://{ConfigTraining.bucket_name}/training-jobs",
     train_data_uri: str = ConfigFireball.s3_data_uri,
-    source_dir: str = os.path.join(os.path.dirname(os.path.realpath(__file__)), "training"),
-    entry_point: str = "train.py",
+    source_dir: str = os.path.join(os.path.dirname(os.path.realpath(__file__)), ConfigTraining.source_dir_folder_name),
+    entry_point: str = ConfigTraining.entry_point,
     role: str = os.getenv('SAGEMAKER_ROLE'),
     instance_type: str = ConfigTraining.instance_type,
     instance_count: int = ConfigTraining.instance_count,
