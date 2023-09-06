@@ -55,7 +55,7 @@ def sagemaker_training(
         instance_count        = instance_count,                             # the number of instances used for training
         base_job_name         = job_name,                                   # the name of the training job
         role                  = role,                                       # Iam role used in training job to access AWS ressources, e.g. S3
-        transformers_version  = ConfigTraining.transfomrers_version,        # the transformers version used in the training job
+        transformers_version  = ConfigTraining.transformers_version,        # the transformers version used in the training job
         pytorch_version       = ConfigTraining.pytorch_version,             # the pytorch_version version used in the training job
         py_version            = ConfigTraining.py_version,                  # the python version used in the training job
         hyperparameters       = hyperparameters,                            # the hyperparameters used for the training job

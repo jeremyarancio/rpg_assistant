@@ -49,7 +49,7 @@ class ConfigTraining:
     lora_dropout = 0.05
 
     #Sagemaker estimator
-    transfomrers_version = "4.28"
+    transformers_version = "4.28"
     pytorch_version = "2.0"
     py_version = "py310"
     source_dir_folder_name = "sagemaker_scripts/"
@@ -62,10 +62,16 @@ class ConfigModelRegistry:
     artifact_uri = f"s3://{PROJECT_NAME}/{prefix_name}/{training_job_name}/output/model.tar.gz "
 
 
-class ConfigDeployment:
-    instance_type = 'ml.g4dn.xlarge'
+class ConfigRegistry:
+    model_data_uri =  f"s3://rpg-assistant/training-jobs/bloom3B-qlora-fireball-2023-09-05-17-58-13-796/output/model.tar.gz"
+    inference_instance_type = 'ml.g4dn.xlarge'
+    batch_instance_type = 'ml.g4dn.xlarge'
     instance_count = 1
     endpoint_name = "test-inference-endpoint"
+    model_package_group_name = "fireball-llms"
+    model_name = "bloom3b-qlora-fireball"
+    approval_status = "PendingManualApproval"
+    description = "Next utterance generation"
     test_data = {
         "inputs": """### Last utterance:
 Razored teeth lash out to take advantage of an opening
