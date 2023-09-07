@@ -1,6 +1,16 @@
 # Docs:
 * https://github.com/huggingface/notebooks/blob/main/sagemaker/17_custom_inference_script/sagemaker-notebook.ipynb
 * https://sagemaker.readthedocs.io/en/stable/frameworks/pytorch/using_pytorch.html#deploy-pytorch-models
+* https://aws.amazon.com/blogs/machine-learning/part-2-model-hosting-patterns-in-amazon-sagemaker-getting-started-with-deploying-real-time-models-on-sagemaker/
+
+## model.tar.gz for training and inference
+```
+model.tar.gz/
+             |- model.pth
+             |- code/
+                     |- inference.py
+                     |- requirements.txt # only for versions 1.3.1 and higher
+```
 
 ## Inference.py
 
