@@ -34,7 +34,7 @@ class ConfigTraining:
     pretrained_model_name = "bigscience/bloom-3b"
     instance_type = 'ml.g4dn.xlarge'
     instance_count = 1
-    epochs = 0.001
+    epochs = 1
     per_device_batch_size = 4
     lr = 5e-5
     seed = 42
@@ -63,9 +63,8 @@ class ConfigRegistry:
     inference_instance_type = 'ml.g4dn.xlarge'
     batch_instance_type = 'ml.g4dn.xlarge'
     instance_count = 1
-    endpoint_name = "test-inference-endpoint"
+    endpoint_name = "fireball_next_utterance_inference_endpoint"
     model_package_group_name = "fireball-llms"
-    model_name = "bloom3b-qlora-fireball"
     approval_status = "PendingManualApproval"
     description = "LLM for next utterance generation trained on the Fireball dataset "
     test_data = {
@@ -93,5 +92,4 @@ Razored teeth lash out to take advantage of an opening
 @dataclass
 class ConfigPipeline:
     pipeline_name = "fireball-llm-pipeline"
-
   

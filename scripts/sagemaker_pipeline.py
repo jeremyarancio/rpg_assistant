@@ -6,19 +6,18 @@
 # https://github.com/aws/amazon-sagemaker-examples/blob/main/sagemaker-pipeline-compare-model-versions/notebook.ipynb
 import logging
 import os
+import time
 
 from sagemaker.inputs import TrainingInput
-from sagemaker.workflow.steps import TrainingStep
-from sagemaker.workflow.step_collections import RegisterModel
-from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.model_step import ModelStep
-from sagemaker.model import Model
+from sagemaker.workflow.parameters import ParameterString
+from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.pipeline_context import PipelineSession
-from sagemaker.workflow.parameters import ParameterInteger, ParameterString
+from sagemaker.workflow.steps import TrainingStep
 
-from scripts.sagemaker_training import FireballEstimator
+from scripts.config import ConfigFireball, ConfigPipeline, ConfigRegistry, ConfigTraining
 from scripts.sagemaker_model_register import FireballModel
-from scripts.config import ConfigFireball, ConfigRegistry, ConfigPipeline
+from scripts.sagemaker_training import FireballEstimator
 
 
 LOGGER = logging.getLogger(__name__)
@@ -64,7 +63,7 @@ register_step = ModelStep(
         model_package_group_name=ConfigRegistry.model_package_group_name,
         inference_instances=[ConfigRegistry.inference_instance_type],
         transform_instances=[ConfigRegistry.batch_instance_type],
-        description=ConfigRegistry.description,
+        description=f"{ConfigTraining.pretrained_model_name}",
         approval_status=ConfigRegistry.approval_status
     )
 )
@@ -81,6 +80,6 @@ pipeline = Pipeline(
 if __name__ == "__main__":
     #Submit pipeline
     pipeline.upsert(role_arn=ROLE)
-    # execution = pipeline.start()
-    # execution.wait()
-    # print(execution.list_steps)
+    execution = pipeline.start(
+        execution_display_name=f"{ConfigPipeline.pipeline_name}-{time.strftime('%Y-%m-%d-%H-%M-%S', time.gmtime())}"
+    )
