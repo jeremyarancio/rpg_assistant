@@ -7,10 +7,11 @@
 import logging
 import os
 import time
+from typing import List
 
 from sagemaker.inputs import TrainingInput
 from sagemaker.workflow.model_step import ModelStep
-from sagemaker.workflow.parameters import ParameterString
+from sagemaker.workflow.parameters import ParameterString, ParameterBoolean, Parameter
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.pipeline_context import PipelineSession
 from sagemaker.workflow.steps import TrainingStep
@@ -29,25 +30,22 @@ class FireballPipeline(Pipeline):
     def __init__(
             self,
             pipeline_name: str,
-            input_data: str,
-            model_approval_status: str,
             **kwargs
         ) -> None:
 
-        # Fireball data s3 uri
-        input_data = ParameterString(name="InputData", 
-                                     default_value=input_data)
-        # What is the default status of the model when registering with model registry.
-        model_approval_status = ParameterString(name="ModelApprovalStatus", 
-                                                default_value=model_approval_status)
+        # Init the pipeline parameters object
+        pipeline_parameters = PipelineParameters()
 
-        estimator = FireballEstimator()
+        estimator = FireballEstimator(
+            merge_weights=pipeline_parameters.merge_weights,
+            gradient_checkpointing=pipeline_parameters.gradient_checkpointing
+        )
         # Training step
         training_step = TrainingStep(
             name='Train',
             estimator=estimator,
             inputs={'training': TrainingInput(          # Training channel 
-                s3_data=input_data,                     # S3 URI of the training data
+                s3_data=pipeline_parameters.input_data,  # S3 URI of the training data
                 content_type="application/x-parquet"    # huggingface datasets parquet type
                 )
             } 
@@ -66,25 +64,52 @@ class FireballPipeline(Pipeline):
                 inference_instances=[ConfigRegistry.inference_instance_type],
                 transform_instances=[ConfigRegistry.batch_instance_type],
                 description=f"{ConfigRegistry.description}",
-                approval_status=model_approval_status
+                approval_status=pipeline_parameters.model_approval_status
             )
         )
 
         super().__init__(
             name=pipeline_name,
-            parameters=[input_data, model_approval_status],
+            parameters=pipeline_parameters.get_params(),
             steps=[training_step, register_step],
             **kwargs
         )
 
 
+class PipelineParameters:
+    """Sagemaker workflow parameters."""
+
+    def __init__(self) -> None:
+        
+        # Fireball data s3 uri
+        self.input_data = ParameterString(
+            name="InputData", 
+            default_value=ConfigFireball.s3_data_uri
+        )
+        # What is the default status of the model when registering with model registry.
+        self.model_approval_status = ParameterString(
+            name="ModelApprovalStatus", 
+            default_value=ConfigRegistry.approval_status
+        )
+
+        # Special hyperparameter for the Sagemaker training
+        self.gradient_checkpointing = ParameterBoolean(
+            name="GradientCheckpointing",
+            default_value=ConfigTraining.gradient_checkpointing,
+        )
+        self.merge_weights = ParameterBoolean(
+            name="MergeWeights",
+            default_value=ConfigTraining.merge_weights,
+        )
+
+    def get_params(self) -> List[Parameter]:
+        """"Return a list of all parameters."""
+        return [param for param in self.__dict__.values()]
+
+
 if __name__ == "__main__":
     #Submit and execute pipeline
-    pipeline = FireballPipeline(
-        pipeline_name=ConfigPipeline.pipeline_name,
-        input_data=ConfigFireball.s3_data_uri,
-        model_approval_status=ConfigRegistry.approval_status
-    )
+    pipeline = FireballPipeline(pipeline_name=ConfigPipeline.pipeline_name)
     pipeline.upsert(role_arn=ROLE)
     execution = pipeline.start(
         execution_display_name=f"{ConfigPipeline.pipeline_name}-{time.strftime('%Y-%m-%d-%H-%M-%S', time.gmtime())}"

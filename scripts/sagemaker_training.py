@@ -1,6 +1,7 @@
 import os
 
 from sagemaker.huggingface import HuggingFace
+from sagemaker.workflow.parameters import ParameterBoolean
 
 from scripts.config import ConfigTraining, ConfigFireball
 
@@ -8,9 +9,19 @@ from scripts.config import ConfigTraining, ConfigFireball
 class FireballEstimator(HuggingFace):
     """Custom estimator for the fireball dataset."""
 
-    def __init__(self):
+    def __init__(
+            self,
+            merge_weights: bool = ConfigTraining.merge_weights,
+            gradient_checkpointing: bool = ConfigTraining.gradient_checkpointing,):
         """Sagemaker estimator used for training an LLM on the Fireball dataset.
         The parameters are pre-implemented for Sagemaker Pipeline.
+
+        Args: 
+        * merge_weights (bool): Merge LoRA weights with base model.
+        * gradient_checkpointing (bool): Enable gradient checkpointing.
+
+        (Those two arguments needs to be implemented as sagemaker parameters since they are booleans.)
+
         """
         estimator_output_uri: str = f"s3://{ConfigTraining.bucket_name}/training-jobs"
         source_dir: str = os.path.join(os.path.dirname(os.path.realpath(__file__)), 
@@ -25,9 +36,9 @@ class FireballEstimator(HuggingFace):
             "epochs": ConfigTraining.epochs,
             "per_device_train_batch_size": ConfigTraining.per_device_batch_size,
             "lr": ConfigTraining.lr,
-            "gradient_checkpointing": ConfigTraining.gradient_checkpointing,
+            "gradient_checkpointing": gradient_checkpointing,
             "gradient_accumulation_steps": ConfigTraining.gradient_accumulation_steps,
-            "merge_weights": ConfigTraining.merge_weights,
+            "merge_weights": merge_weights,
             "r": ConfigTraining.r,
             "lora_alpha": ConfigTraining.lora_alpha,
             "lora_dropout": ConfigTraining.lora_dropout,
