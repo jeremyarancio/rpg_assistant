@@ -24,61 +24,67 @@ LOGGER = logging.getLogger(__name__)
 ROLE = os.getenv('SAGEMAKER_ROLE')
 
 
-# Where the input data is stored
-input_data = ParameterString(
-    name="InputData",
-    default_value=ConfigFireball.s3_data_uri,
-)
-# What is the default status of the model when registering with model registry.
-model_approval_status = ParameterString(
-    name="ModelApprovalStatus",
-    default_value=ConfigRegistry.approval_status
-)
+class FireballPipeline(Pipeline):
 
-estimator = FireballEstimator()
+    def __init__(
+            self,
+            pipeline_name: str,
+            input_data: str,
+            model_approval_status: str,
+            **kwargs
+        ) -> None:
 
+        # Fireball data s3 uri
+        input_data = ParameterString(name="InputData", 
+                                     default_value=input_data)
+        # What is the default status of the model when registering with model registry.
+        model_approval_status = ParameterString(name="ModelApprovalStatus", 
+                                                default_value=model_approval_status)
 
-training_step = TrainingStep(
-    name='Train',
-    estimator=estimator,
-    inputs={'training': TrainingInput(          # Training channel 
-        s3_data=ConfigFireball.s3_data_uri,     # S3 URI of the training data
-        content_type="application/x-parquet"    # huggingface datasets parquet type
+        estimator = FireballEstimator()
+        # Training step
+        training_step = TrainingStep(
+            name='Train',
+            estimator=estimator,
+            inputs={'training': TrainingInput(          # Training channel 
+                s3_data=input_data,                     # S3 URI of the training data
+                content_type="application/x-parquet"    # huggingface datasets parquet type
+                )
+            } 
         )
-    } 
-)
+        # Register step
+        model = FireballModel(
+            model_data=training_step.properties.ModelArtifacts.S3ModelArtifacts,
+            sagemaker_session=PipelineSession() # Is required
+        )
+        register_step = ModelStep(
+            name="RegisterModel",
+            step_args=model.register(
+                content_types = ["application/json"],
+                response_types = ["application/json"],
+                model_package_group_name=ConfigRegistry.model_package_group_name,
+                inference_instances=[ConfigRegistry.inference_instance_type],
+                transform_instances=[ConfigRegistry.batch_instance_type],
+                description=f"{ConfigRegistry.description}",
+                approval_status=model_approval_status
+            )
+        )
 
-print(training_step)
+        super().__init__(
+            name=pipeline_name,
+            parameters=[input_data, model_approval_status],
+            steps=[training_step, register_step],
+            **kwargs
+        )
 
-model = FireballModel(
-    model_data=training_step.properties.ModelArtifacts.S3ModelArtifacts,
-    sagemaker_session=PipelineSession() # Is required
-)
-
-register_step = ModelStep(
-   name="RegisterModel",
-   step_args=model.register(
-        content_types = ["application/json"],
-        response_types = ["application/json"],
-        model_package_group_name=ConfigRegistry.model_package_group_name,
-        inference_instances=[ConfigRegistry.inference_instance_type],
-        transform_instances=[ConfigRegistry.batch_instance_type],
-        description=f"{ConfigTraining.pretrained_model_name}",
-        approval_status=ConfigRegistry.approval_status
-    )
-)
-
-pipeline = Pipeline(
-    name=ConfigPipeline.pipeline_name,
-    parameters=[
-        input_data,
-        model_approval_status
-    ],
-    steps=[training_step, register_step]
-)
 
 if __name__ == "__main__":
-    #Submit pipeline
+    #Submit and execute pipeline
+    pipeline = FireballPipeline(
+        pipeline_name=ConfigPipeline.pipeline_name,
+        input_data=ConfigFireball.s3_data_uri,
+        model_approval_status=ConfigRegistry.approval_status
+    )
     pipeline.upsert(role_arn=ROLE)
     execution = pipeline.start(
         execution_display_name=f"{ConfigPipeline.pipeline_name}-{time.strftime('%Y-%m-%d-%H-%M-%S', time.gmtime())}"

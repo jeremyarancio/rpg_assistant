@@ -29,12 +29,12 @@ class ConfigFireball:
 
 @dataclass
 class ConfigTraining:
-    job_name = "bloom3B-qlora-fireball"
     bucket_name = PROJECT_NAME
     pretrained_model_name = "bigscience/bloom-3b"
-    instance_type = 'ml.g4dn.xlarge'
+    job_name = f"{pretrained_model_name}-qlora-fireball"
+    instance_type = "ml.g4dn.xlarge" #Test 'ml.g5.xlarge'
     instance_count = 1
-    epochs = 1
+    epochs = 0.001
     per_device_batch_size = 4
     lr = 5e-5
     seed = 42
@@ -66,7 +66,7 @@ class ConfigRegistry:
     endpoint_name = "fireball_next_utterance_inference_endpoint"
     model_package_group_name = "fireball-llms"
     approval_status = "PendingManualApproval"
-    description = "LLM for next utterance generation trained on the Fireball dataset "
+    description = f"{ConfigTraining.job_name}"
     test_data = {
         "inputs": """### Last utterance:
 Razored teeth lash out to take advantage of an opening

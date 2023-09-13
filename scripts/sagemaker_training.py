@@ -30,7 +30,8 @@ class FireballEstimator(HuggingFace):
             "merge_weights": ConfigTraining.merge_weights,
             "r": ConfigTraining.r,
             "lora_alpha": ConfigTraining.lora_alpha,
-            "lora_dropout": ConfigTraining.lora_dropout
+            "lora_dropout": ConfigTraining.lora_dropout,
+            "pretrained_model_name": ConfigTraining.pretrained_model_name
         }
 
         # Metrics returned by the Trainer and tracked by SageMaker during training

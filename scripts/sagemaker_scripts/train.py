@@ -1,21 +1,15 @@
-import os
-import sys
-import logging
 import argparse
+import logging
+import os
 import shutil
+import sys
 
-from datasets import load_from_disk
-from peft import PeftModel # for typing only
 import torch.cuda
-from transformers import (
-    AutoTokenizer, 
-    AutoModelForCausalLM,
-    set_seed, 
-    DataCollatorForLanguageModeling, 
-    TrainingArguments, 
-    Trainer,
-    PreTrainedModel
-)
+from datasets import load_from_disk
+from peft import PeftModel  # for typing only
+from transformers import (AutoModelForCausalLM, AutoTokenizer,
+                          DataCollatorForLanguageModeling, PreTrainedModel,
+                          Trainer, TrainingArguments, set_seed)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -74,9 +68,7 @@ def parse_args():
 def train(args):
 
     set_seed(args.seed)
-
-    # The tokenizer was prepared during the dataset preparation
-    # Load 
+    
     tokenizer = load_tokenizer(args.pretrained_model_name)
     use_cache = False if args.gradient_checkpointing else True,  # this is needed for gradient checkpointing
     model = AutoModelForCausalLM.from_pretrained(
@@ -109,7 +101,10 @@ def train(args):
         logging_dir=f"{args.output_dir}/logs",
         logging_strategy="steps",
         logging_steps=10,
-        save_strategy="no",
+        # checkpoints
+        save_strategy="steps",
+        save_total_limit=1, # only save the last checkpoint and delete the previous ones
+        save_steps=0.2 # Portion of the total training steps
     )
     trainer = Trainer(
         model=model,
@@ -121,6 +116,7 @@ def train(args):
     LOGGER.info(f"Training done. Start saving with merge_weights = {args.merge_weights}.")
 
     if args.merge_weights:
+        LOGGER.info(f"Merge LoRA weights with base model.")
         # merge adapter weights with base model and save
         # save int 4 adapters
         trainer.model.save_pretrained(args.output_dir, safe_serialization=False)
@@ -142,12 +138,14 @@ def train(args):
         merged_model = model.merge_and_unload()
         merged_model.save_pretrained(args.output_dir, safe_serialization=True)
     else:
+        LOGGER.info(f"Save model without merging weights.")
         trainer.model.save_pretrained(args.output_dir, safe_serialization=False)
     tokenizer.save_pretrained(args.output_dir)
 
+
 def prepare_model(model: PreTrainedModel, gradient_checkpointing: bool) -> PreTrainedModel:
     """Prepare model for PEFT - QLoRA"""
-    from torch import float16, bfloat16, float32
+    from torch import bfloat16, float16, float32
 
     # freeze the model
     for param in model.parameters():
@@ -163,7 +161,7 @@ def prepare_model(model: PreTrainedModel, gradient_checkpointing: bool) -> PreTr
 
 
 def create_peft_model(model: PreTrainedModel, r: int, lora_alpha: int, lora_dropout: float) -> PeftModel:
-    from peft import get_peft_model, LoraConfig, TaskType
+    from peft import LoraConfig, TaskType, get_peft_model
 
     lora_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
