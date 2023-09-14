@@ -32,9 +32,9 @@ class ConfigTraining:
     bucket_name = PROJECT_NAME
     pretrained_model_name = "bigscience/bloom-3b"
     job_name = f"{pretrained_model_name}-qlora-fireball"
-    instance_type = "ml.g4dn.xlarge" #Test 'ml.g5.xlarge'
+    instance_type = "ml.g5.xlarge"
     instance_count = 1
-    epochs = 0.001
+    epochs = 0.5
     per_device_batch_size = 4
     lr = 5e-5
     seed = 42

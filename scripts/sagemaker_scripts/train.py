@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import sys
+from distutils.util import strtobool
 
 import torch.cuda
 from datasets import load_from_disk
@@ -51,10 +52,10 @@ def parse_args():
     parser.add_argument("--per_device_train_batch_size", type=int, default=4, help="Training batch size.")
     parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate.")
     parser.add_argument("--seed", type=int, default=42, help="Seed.")
-    parser.add_argument("--gradient_checkpointing", type=bool, default=True, help="Gradient checkpointing")
+    parser.add_argument("--gradient_checkpointing", type=strtobool, default=True, help="Gradient checkpointing")
     parser.add_argument("--gradient_accumulation_steps", type=int, default=4, help="Number of gradient accumulation steps to save memory.")
-    parser.add_argument("--bf16", type=bool, default=True if torch.cuda.get_device_capability()[0] == 8 else False, help="Whether to use bf16.")
-    parser.add_argument("--merge_weights", type=bool, default=False, help="Whether to merge LoRA weights with base model.")
+    parser.add_argument("--bf16", type=strtobool, default=True if torch.cuda.get_device_capability()[0] == 8 else False, help="Whether to use bf16.")
+    parser.add_argument("--merge_weights", type=strtobool, default=False, help="Whether to merge LoRA weights with base model.")
     
     #Lora
     parser.add_argument('--r', type=int, default=32, help='Number of attention heads for LoRA.')

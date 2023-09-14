@@ -36,11 +36,8 @@ class FireballPipeline(Pipeline):
         # Init the pipeline parameters object
         pipeline_parameters = PipelineParameters()
 
-        estimator = FireballEstimator(
-            merge_weights=pipeline_parameters.merge_weights,
-            gradient_checkpointing=pipeline_parameters.gradient_checkpointing
-        )
         # Training step
+        estimator = FireballEstimator()
         training_step = TrainingStep(
             name='Train',
             estimator=estimator,
@@ -90,16 +87,6 @@ class PipelineParameters:
         self.model_approval_status = ParameterString(
             name="ModelApprovalStatus", 
             default_value=ConfigRegistry.approval_status
-        )
-
-        # Special hyperparameter for the Sagemaker training
-        self.gradient_checkpointing = ParameterBoolean(
-            name="GradientCheckpointing",
-            default_value=ConfigTraining.gradient_checkpointing,
-        )
-        self.merge_weights = ParameterBoolean(
-            name="MergeWeights",
-            default_value=ConfigTraining.merge_weights,
         )
 
     def get_params(self) -> List[Parameter]:
