@@ -3,6 +3,12 @@
 * https://sagemaker.readthedocs.io/en/stable/frameworks/pytorch/using_pytorch.html#deploy-pytorch-models
 * https://aws.amazon.com/blogs/machine-learning/part-2-model-hosting-patterns-in-amazon-sagemaker-getting-started-with-deploying-real-time-models-on-sagemaker/
 
+## Training
+
+### Estimator
+
+**Warning**: when implementing an hyperparameter to the estimator, like a boolean or a list, the instance will consider it as a string, that can leads to some issues. It is therefore really important to convert those hyperparameters into their equilvalent from `sagemaker.workflows.parameters`.
+
 ## model.tar.gz for training and inference
 ```
 model.tar.gz/

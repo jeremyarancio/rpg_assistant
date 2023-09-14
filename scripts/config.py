@@ -1,5 +1,5 @@
 import os
-import logging
+from dataclasses import dataclass
 from pathlib import Path
 
 from peft import TaskType
@@ -9,8 +9,8 @@ REPO_DIR = Path(os.path.dirname(os.path.realpath(__file__))).parent
 PROJECT_NAME = "rpg-assistant"
 
 
+@dataclass
 class ConfigFireball:
-    
     fireball_path = REPO_DIR / "data/fireball"
     fireball_postprocessed_path = REPO_DIR / "data/fireball_postprocessed"
     fireball_tokenized_path = REPO_DIR / "data/fireball_tokenized"
@@ -27,13 +27,14 @@ class ConfigFireball:
     )
 
 
+@dataclass
 class ConfigTraining:
-    job_name = "bloom3B-qlora-fireball"
     bucket_name = PROJECT_NAME
     pretrained_model_name = "bigscience/bloom-3b"
-    instance_type = 'ml.g4dn.xlarge'
+    job_name = f"{pretrained_model_name}-qlora-fireball"
+    instance_type = "ml.g5.xlarge"
     instance_count = 1
-    epochs = 1
+    epochs = 0.5
     per_device_batch_size = 4
     lr = 5e-5
     seed = 42
@@ -56,22 +57,16 @@ class ConfigTraining:
     entry_point = "train.py"
 
 
-class ConfigModelRegistry:
-    prefix_name = "models-registry"
-    training_job_name = "bloom3B-qlora-fireball-2023-08-05-15-57-44-467"
-    artifact_uri = f"s3://{PROJECT_NAME}/{prefix_name}/{training_job_name}/output/model.tar.gz "
-
-
+@dataclass
 class ConfigRegistry:
     model_data_uri =  f"s3://rpg-assistant/training-jobs/bloom3B-qlora-fireball-2023-09-05-17-58-13-796/output/model.tar.gz"
     inference_instance_type = 'ml.g4dn.xlarge'
     batch_instance_type = 'ml.g4dn.xlarge'
     instance_count = 1
-    endpoint_name = "test-inference-endpoint"
+    endpoint_name = "fireball_next_utterance_inference_endpoint"
     model_package_group_name = "fireball-llms"
-    model_name = "bloom3b-qlora-fireball"
     approval_status = "PendingManualApproval"
-    description = "Next utterance generation"
+    description = f"{ConfigTraining.job_name}"
     test_data = {
         "inputs": """### Last utterance:
 Razored teeth lash out to take advantage of an opening
@@ -93,4 +88,8 @@ Razored teeth lash out to take advantage of an opening
 """
     }
 
+
+@dataclass
+class ConfigPipeline:
+    pipeline_name = "fireball-llm-pipeline"
   

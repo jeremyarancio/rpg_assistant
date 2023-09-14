@@ -53,6 +53,7 @@ class FireballModel(HuggingFaceModel):
 
 if __name__ == "__main__":
     model = FireballModel(model_data=ConfigRegistry.model_data_uri)
+    # model.test_model()
     model.register(
         content_types = ["application/json"],
         response_types = ["application/json"],
@@ -62,4 +63,3 @@ if __name__ == "__main__":
         description=ConfigRegistry.description,
         approval_status=ConfigRegistry.approval_status,
     )
-    # test_model(model=model)
