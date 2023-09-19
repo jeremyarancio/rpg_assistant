@@ -11,12 +11,12 @@ from typing import List
 
 from sagemaker.inputs import TrainingInput
 from sagemaker.workflow.model_step import ModelStep
-from sagemaker.workflow.parameters import ParameterString, ParameterBoolean, Parameter
+from sagemaker.workflow.parameters import ParameterString, Parameter
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.pipeline_context import PipelineSession
 from sagemaker.workflow.steps import TrainingStep
 
-from scripts.config import ConfigFireball, ConfigPipeline, ConfigRegistry, ConfigTraining
+from scripts.config import ConfigFireball, ConfigPipeline, ConfigRegistry, ConfigDeployment
 from scripts.sagemaker_model_register import FireballModel
 from scripts.sagemaker_training import FireballEstimator
 
@@ -58,8 +58,8 @@ class FireballPipeline(Pipeline):
                 content_types = ["application/json"],
                 response_types = ["application/json"],
                 model_package_group_name=ConfigRegistry.model_package_group_name,
-                inference_instances=[ConfigRegistry.inference_instance_type],
-                transform_instances=[ConfigRegistry.batch_instance_type],
+                inference_instances=[ConfigDeployment.inference_instance_type],
+                transform_instances=[ConfigDeployment.batch_instance_type],
                 description=f"{ConfigRegistry.description}",
                 approval_status=pipeline_parameters.model_approval_status
             )
