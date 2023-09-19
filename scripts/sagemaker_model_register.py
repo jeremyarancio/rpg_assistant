@@ -3,7 +3,7 @@ import logging
 
 from sagemaker.huggingface import HuggingFaceModel
 
-from scripts.config import ConfigTraining, ConfigRegistry
+from scripts.config import ConfigTraining, ConfigRegistry, ConfigDeployment
 
 
 class FireballModel(HuggingFaceModel):
@@ -36,9 +36,9 @@ class FireballModel(HuggingFaceModel):
         """Deploy model to an endpoint for testing"""
         logging.basicConfig(level=logging.INFO)
         predictor = self.deploy(
-            initial_instance_count=ConfigRegistry.instance_count,
-            instance_type=ConfigRegistry.inference_instance_type,
-            endpoint_name=ConfigRegistry.endpoint_name
+            initial_instance_count=ConfigDeployment.instance_count,
+            instance_type=ConfigDeployment.inference_instance_type,
+            endpoint_name=ConfigDeployment.endpoint_name
         )
         try: 
             prediction = predictor.predict(ConfigRegistry.test_data)
@@ -52,14 +52,15 @@ class FireballModel(HuggingFaceModel):
 
 
 if __name__ == "__main__":
+    # For testing
     model = FireballModel(model_data=ConfigRegistry.model_data_uri)
     # model.test_model()
     model.register(
         content_types = ["application/json"],
         response_types = ["application/json"],
         model_package_group_name=ConfigRegistry.model_package_group_name,
-        inference_instances=[ConfigRegistry.inference_instance_type],
-        transform_instances=[ConfigRegistry.batch_instance_type],
+        inference_instances=[ConfigDeployment.inference_instance_type],
+        transform_instances=[ConfigDeployment.batch_instance_type],
         description=ConfigRegistry.description,
         approval_status=ConfigRegistry.approval_status,
     )

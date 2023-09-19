@@ -60,10 +60,6 @@ class ConfigTraining:
 @dataclass
 class ConfigRegistry:
     model_data_uri =  f"s3://rpg-assistant/training-jobs/bloom3B-qlora-fireball-2023-09-05-17-58-13-796/output/model.tar.gz"
-    inference_instance_type = 'ml.g4dn.xlarge'
-    batch_instance_type = 'ml.g4dn.xlarge'
-    instance_count = 1
-    endpoint_name = "fireball_next_utterance_inference_endpoint"
     model_package_group_name = "fireball-llms"
     approval_status = "PendingManualApproval"
     description = f"{ConfigTraining.job_name}"
@@ -92,4 +88,12 @@ Razored teeth lash out to take advantage of an opening
 @dataclass
 class ConfigPipeline:
     pipeline_name = "fireball-llm-pipeline"
-  
+
+
+@dataclass
+class ConfigDeployment:
+    model_group_arn = "arn:aws:sagemaker:eu-central-1:265890761777:model-package-group/fireball-llms"
+    inference_instance_type = 'ml.g4dn.xlarge'
+    batch_instance_type = 'ml.g4dn.xlarge'
+    instance_count = 1
+    endpoint_name = "fireball-next-utterance-inference-endpoint"
