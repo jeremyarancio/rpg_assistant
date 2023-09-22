@@ -20,10 +20,9 @@ if __name__ == "__main__":
 
 
     model_package = get_approved_package(ConfigRegistry.model_package_group_name)
-
-    model_description = SM_CLIENT.describe_model_package(ModelPackageName=model_package['ModelPackageArn'])
-    LOGGER.info(f"Model Package Description: {model_description}")
     model_package_arn = model_package['ModelPackageArn']
+    model_description = SM_CLIENT.describe_model_package(ModelPackageName=model_package_arn)
+    LOGGER.info(f"Model Package Description: {model_description}")
     model = ModelPackage(
         role=ROLE,
         model_package_arn=model_package_arn,

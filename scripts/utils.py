@@ -28,18 +28,6 @@ def get_approved_package(model_package_group_name: str):
         )
         approved_packages = response["ModelPackageSummaryList"]
 
-        # # Fetch more packages if none returned with continuation token
-        # while len(approved_packages) == 0 and "NextToken" in response:
-        #     logger.debug("Getting more packages for token: {}".format(response["NextToken"]))
-        #     response = sm_client.list_model_packages(
-        #         ModelPackageGroupName=model_package_group_name,
-        #         ModelApprovalStatus="Approved",
-        #         SortBy="CreationTime",
-        #         MaxResults=100,
-        #         NextToken=response["NextToken"],
-        #     )
-        #     approved_packages.extend(response["ModelPackageSummaryList"])
-
         # Return error if no packages found
         if len(approved_packages) == 0:
             error_message = (
@@ -59,6 +47,7 @@ def get_approved_package(model_package_group_name: str):
         raise Exception(error_message)
     
 if __name__ == "__main__":
+    # Testing
     model_package_group_name = ConfigRegistry.model_package_group_name
     approved_package = get_approved_package(model_package_group_name)
     print("finished")
